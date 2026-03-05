@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Word Game Checker</title>
+<style>
+  :root {
+    --bg: #121213;
+    --surface: #1a1a1b;
+    --border: #3a3a3c;
+    --text: #d7dadc;
+    --text-dim: #818384;
+    --green: #538d4e;
+    --yellow: #b59f3b;
+    --black: #3a3a3c;
+    --green-bright: #6aaa64;
+    --yellow-bright: #c9b458;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 16px;
+    max-width: 540px;
+    margin: 0 auto;
+  }
+
+  h1 {
+    font-size: 1.4rem;
+    text-align: center;
+    margin-bottom: 4px;
+    letter-spacing: 0.05em;
+  }
+
+  .subtitle {
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    margin-bottom: 20px;
+  }
+
+  /* Letter count chips */
+  .chips {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 20px;
+  }
+
+  .chip {
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    background: var(--black);
+    color: var(--text);
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .chip:hover { transform: scale(1.08); }
+  .chip.active { background: var(--green); }
+
+  /* Input area */
+  .input-area {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+  }
+
+  label {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .input-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  input[type="text"] {
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 1.1rem;
+    font-weight: 700;
+    padding: 10px 12px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+
+  input[type="text"]:focus {
+    border-color: var(--green);
+  }
+
+  input[type="text"]::placeholder {
+    color: var(--text-dim);
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: normal;
+  }
+
+  #input-feedback {
+    text-transform: lowercase;
+  }
+
+  /* Tile input mode */
+  .tile-input {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+    margin-top: 4px;
+    min-height: 50px;
+  }
+
+  .tile-input-cell {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    font-size: 1.3rem;
+    font-weight: 700;
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.1s, background 0.15s;
+    border: 2px solid var(--border);
+  }
+
+  .tile-input-cell:active { transform: scale(0.92); }
+  .tile-input-cell.fb-b { background: var(--black); border-color: var(--black); }
+  .tile-input-cell.fb-y { background: var(--yellow); border-color: var(--yellow); }
+  .tile-input-cell.fb-g { background: var(--green); border-color: var(--green); }
+
+  /* Buttons */
+  .btn-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  button {
+    padding: 10px 18px;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button:active { transform: scale(0.96); }
+
+  .btn-add {
+    background: var(--green);
+    color: white;
+    flex: 1;
+  }
+
+  .btn-add:hover { background: var(--green-bright); }
+
+  .btn-reset {
+    background: var(--border);
+    color: var(--text);
+  }
+
+  .btn-copy {
+    background: var(--yellow);
+    color: #1a1a1b;
+  }
+
+  .btn-copy:hover { background: var(--yellow-bright); }
+
+  .btn-copy-row {
+    background: transparent;
+    color: var(--text-dim);
+    padding: 4px 8px;
+    font-size: 1.1rem;
+    border-radius: 4px;
+  }
+
+  .btn-copy-row:hover { background: var(--surface); }
+
+  /* Results grid */
+  .results {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 20px;
+  }
+
+  .result-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .result-word {
+    font-weight: 700;
+    font-size: 0.9rem;
+    letter-spacing: 0.1em;
+    min-width: 70px;
+    color: var(--text-dim);
+  }
+
+  .tile {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: white;
+    animation: flipIn 0.3s ease;
+  }
+
+  @keyframes flipIn {
+    0% { transform: scaleY(0); }
+    100% { transform: scaleY(1); }
+  }
+
+  .tile-green { background: var(--green); }
+  .tile-yellow { background: var(--yellow); }
+  .tile-black { background: var(--black); }
+
+  /* Shorthand output */
+  .shorthand-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 2px;
+    margin-bottom: 8px;
+    padding-left: 74px;
+  }
+
+  .shorthand-text {
+    font-family: monospace;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+  }
+
+  /* Mode toggle */
+  .mode-toggle {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    margin-bottom: 16px;
+    background: var(--surface);
+    border-radius: 8px;
+    padding: 4px;
+  }
+
+  .mode-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .mode-btn.active {
+    background: var(--border);
+    color: var(--text);
+  }
+
+  /* Feedback legend */
+  .legend {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+  }
+
+  .legend span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .legend-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    display: inline-block;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--text);
+    color: var(--bg);
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 100;
+    pointer-events: none;
+  }
+
+  .toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+
+  /* Delete button */
+  .btn-delete {
+    background: transparent;
+    color: var(--text-dim);
+    padding: 4px 8px;
+    font-size: 0.9rem;
+    border-radius: 4px;
+    opacity: 0.5;
+    transition: opacity 0.15s;
+  }
+
+  .btn-delete:hover { opacity: 1; color: #e74c3c; }
+
+  @media (max-width: 400px) {
+    .tile, .tile-input-cell { width: 38px; height: 38px; font-size: 1rem; }
+    .chip { width: 32px; height: 32px; font-size: 0.85rem; }
+    .result-word { min-width: 55px; font-size: 0.8rem; }
+  }
+</style>
+</head>
+<body>
+
+<h1>🟩 Word Game Checker</h1>
+<p class="subtitle">Wordle · Parkrundle · any word game</p>
+
+<!-- Letter count -->
+<div class="chips" id="chips"></div>
+
+<!-- Input mode toggle -->
+<div class="mode-toggle">
+  <button class="mode-btn active" data-mode="tile" onclick="setMode('tile')">Tap tiles</button>
+  <button class="mode-btn" data-mode="text" onclick="setMode('text')">Type shorthand</button>
+</div>
+
+<!-- Input area -->
+<div class="input-area">
+  <div class="input-group">
+    <label for="input-guess">Guess</label>
+    <input type="text" id="input-guess" placeholder="Enter guess word" autocomplete="off" autocapitalize="characters" spellcheck="false">
+  </div>
+
+  <!-- Tile input mode -->
+  <div id="tile-input-area">
+    <label>Tap tiles to set feedback</label>
+    <div class="legend">
+      <span><span class="legend-dot" style="background:var(--black)"></span> Miss</span>
+      <span><span class="legend-dot" style="background:var(--yellow)"></span> Wrong spot</span>
+      <span><span class="legend-dot" style="background:var(--green)"></span> Correct</span>
+    </div>
+    <div class="tile-input" id="tile-input"></div>
+  </div>
+
+  <!-- Text input mode (hidden by default) -->
+  <div id="text-input-area" style="display:none">
+    <div class="input-group">
+      <label for="input-feedback">Feedback (b=black y=yellow g=green)</label>
+      <input type="text" id="input-feedback" placeholder="e.g. bbgyg" autocomplete="off" spellcheck="false">
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn-add" onclick="addGuess()">Add row</button>
+    <button class="btn-reset" onclick="resetAll()">Reset</button>
+  </div>
+</div>
+
+<!-- Results -->
+<div class="results" id="results"></div>
+
+<!-- Copy all -->
+<div class="btn-row" id="copy-row" style="display:none">
+  <button class="btn-copy" onclick="copyAll()">📋 Copy all rows</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  let letterCount = 5;
+  let mode = 'tile';
+  let guessRows = [];
+  let tileFeedback = [];
+
+  // Init
+  function init() {
+    const chips = document.getElementById('chips');
+    for (let i = 1; i <= 12; i++) {
+      const chip = document.createElement('div');
+      chip.className = 'chip' + (i === letterCount ? ' active' : '');
+      chip.textContent = i;
+      chip.onclick = () => setLetterCount(i);
+      chips.appendChild(chip);
+    }
+    buildTileInput();
+    document.getElementById('input-guess').addEventListener('input', onGuessInput);
+    document.getElementById('input-guess').addEventListener('keydown', e => {
+      if (e.key === 'Enter') addGuess();
+    });
+    document.getElementById('input-feedback').addEventListener('keydown', e => {
+      if (e.key === 'Enter') addGuess();
+    });
+  }
+
+  function setLetterCount(n) {
+    letterCount = n;
+    document.querySelectorAll('.chip').forEach((c, i) => {
+      c.classList.toggle('active', i + 1 === n);
+    });
+    buildTileInput();
+  }
+
+  function setMode(m) {
+    mode = m;
+    document.querySelectorAll('.mode-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.mode === m);
+    });
+    document.getElementById('tile-input-area').style.display = m === 'tile' ? '' : 'none';
+    document.getElementById('text-input-area').style.display = m === 'text' ? '' : 'none';
+  }
+
+  function buildTileInput() {
+    const container = document.getElementById('tile-input');
+    container.innerHTML = '';
+    tileFeedback = Array(letterCount).fill('b');
+    const guess = document.getElementById('input-guess').value.toUpperCase();
+    for (let i = 0; i < letterCount; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'tile-input-cell fb-b';
+      cell.textContent = i < guess.length ? guess[i] : '';
+      cell.dataset.index = i;
+      cell.onclick = () => cycleTile(i);
+      container.appendChild(cell);
+    }
+  }
+
+  function onGuessInput() {
+    const guess = document.getElementById('input-guess').value.toUpperCase();
+    const cells = document.querySelectorAll('.tile-input-cell');
+    cells.forEach((cell, i) => {
+      cell.textContent = i < guess.length ? guess[i] : '';
+    });
+    // Auto-adjust letter count if guess is longer
+    if (guess.length > letterCount && guess.length <= 12) {
+      setLetterCount(guess.length);
+    }
+  }
+
+  function cycleTile(index) {
+    const cycle = ['b', 'y', 'g'];
+    const current = cycle.indexOf(tileFeedback[index]);
+    tileFeedback[index] = cycle[(current + 1) % 3];
+    const cell = document.querySelectorAll('.tile-input-cell')[index];
+    cell.className = 'tile-input-cell fb-' + tileFeedback[index];
+  }
+
+  function getFeedback() {
+    if (mode === 'tile') {
+      return tileFeedback.join('');
+    } else {
+      return document.getElementById('input-feedback').value.trim().toLowerCase();
+    }
+  }
+
+  function addGuess() {
+    const guessInput = document.getElementById('input-guess');
+    const guess = guessInput.value.trim().toUpperCase();
+    const feedback = getFeedback();
+
+    if (!guess && !feedback) {
+      showToast('Enter a guess and feedback');
+      return;
+    }
+
+    const effectiveGuess = guess || '_'.repeat(letterCount);
+    const effectiveFeedback = feedback || 'b'.repeat(effectiveGuess.length);
+
+    if (!/^[byg]+$/.test(effectiveFeedback)) {
+      showToast('Feedback: b=black, y=yellow, g=green');
+      return;
+    }
+
+    if (effectiveGuess.length !== effectiveFeedback.length && effectiveGuess !== '_'.repeat(effectiveFeedback.length)) {
+      showToast(`Guess (${effectiveGuess.length}) and feedback (${effectiveFeedback.length}) must be same length`);
+      return;
+    }
+
+    const emoji = effectiveFeedback.split('').map(c =>
+      c === 'g' ? '🟩' : c === 'y' ? '🟨' : '⬛'
+    ).join('');
+
+    const shorthand = effectiveFeedback;
+    guessRows.push({ word: effectiveGuess, feedback: effectiveFeedback, emoji, shorthand });
+
+    renderResults();
+
+    // Reset inputs
+    guessInput.value = '';
+    document.getElementById('input-feedback').value = '';
+    buildTileInput();
+    guessInput.focus();
+  }
+
+  function removeRow(index) {
+    guessRows.splice(index, 1);
+    renderResults();
+  }
+
+  function renderResults() {
+    const container = document.getElementById('results');
+    container.innerHTML = '';
+
+    guessRows.forEach((row, idx) => {
+      // Tile row
+      const rowDiv = document.createElement('div');
+      rowDiv.className = 'result-row';
+
+      const wordSpan = document.createElement('span');
+      wordSpan.className = 'result-word';
+      wordSpan.textContent = row.word;
+      rowDiv.appendChild(wordSpan);
+
+      for (let i = 0; i < row.feedback.length; i++) {
+        const tile = document.createElement('div');
+        const fb = row.feedback[i];
+        tile.className = 'tile tile-' + (fb === 'g' ? 'green' : fb === 'y' ? 'yellow' : 'black');
+        tile.textContent = i < row.word.length ? row.word[i] : '';
+        tile.style.animationDelay = (i * 0.08) + 's';
+        rowDiv.appendChild(tile);
+      }
+
+      // Copy row button
+      const copyBtn = document.createElement('button');
+      copyBtn.className = 'btn-copy-row';
+      copyBtn.textContent = '📋';
+      copyBtn.title = 'Copy this row';
+      copyBtn.onclick = () => {
+        navigator.clipboard.writeText(row.shorthand);
+        showToast('Shorthand copied!');
+      };
+      rowDiv.appendChild(copyBtn);
+
+      // Delete row button
+      const delBtn = document.createElement('button');
+      delBtn.className = 'btn-delete';
+      delBtn.textContent = '✕';
+      delBtn.title = 'Remove row';
+      delBtn.onclick = () => removeRow(idx);
+      rowDiv.appendChild(delBtn);
+
+      container.appendChild(rowDiv);
+
+      // Shorthand row
+      const shRow = document.createElement('div');
+      shRow.className = 'shorthand-row';
+      const shText = document.createElement('span');
+      shText.className = 'shorthand-text';
+      shText.textContent = row.shorthand;
+      shRow.appendChild(shText);
+      container.appendChild(shRow);
+    });
+
+    document.getElementById('copy-row').style.display = guessRows.length > 0 ? '' : 'none';
+  }
+
+  function copyAll() {
+    const text = guessRows.map(r => r.emoji).join('\n');
+    navigator.clipboard.writeText(text);
+    showToast('All rows copied!');
+  }
+
+  function resetAll() {
+    guessRows = [];
+    document.getElementById('results').innerHTML = '';
+    document.getElementById('copy-row').style.display = 'none';
+    document.getElementById('input-guess').value = '';
+    document.getElementById('input-feedback').value = '';
+    buildTileInput();
+    showToast('Reset!');
+  }
+
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  init();
+</script>
+</body>
+</html>
